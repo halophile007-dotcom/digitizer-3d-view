@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Spectrum digitiserNETBOX</title>
+
+  <style>
+    html, body {
+      margin: 0;
+      overflow: hidden;
+      background: #1b1d22;
+      height: 100%;
+    }
+
+    canvas {
+      display: block;
+    }
+
+    #hint {
+      position: absolute;
+      bottom: 15px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #7de6ff;
+      font-family: Arial;
+      font-size: 13px;
+      letter-spacing: 2px;
+      opacity: 0.75;
+      pointer-events: none;
+    }
+  </style>
+
+  <!-- Import map so we can use bare specifiers like "three" in the module script below -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+
+<body>
+
+  <div id="hint">Drag to Rotate &middot; Scroll to Zoom</div>
+
+  <script type="module">
+    import * as THREE from "three";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+    // ============================================================
+    // SCENE / CAMERA / RENDERER SETUP
+    // ============================================================
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0e0f12);
+    scene.fog = new THREE.FogExp2(0x0e0f12, 0.025);
+
+    const camera = new THREE.PerspectiveCamera(
+      38,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      100
+    );
+    camera.position.set(4.6, 2.6, 5.4);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.15;
+    document.body.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.target.set(0, 0.2, 0);
+
+    // ============================================================
+    // LIGHTING (bright, even studio-style lighting like the photo)
+    // ============================================================
+
+    scene.add(new THREE.AmbientLight(0xffffff, 3.0));
+
+    const key = new THREE.DirectionalLight(0xffffff, 3.2);
+    key.position.set(5, 8, 6);
+    key.castShadow = true;
+    scene.add(key);
+
+    const fill = new THREE.DirectionalLight(0xffffff, 1.6);
+    fill.position.set(-5, 3, 4);
+    scene.add(fill);
+
+    const front = new THREE.DirectionalLight(0xffffff, 3.4);
+    front.position.set(0, 1.5, 8);
+    scene.add(front);
+
+    const frontFillLow = new THREE.PointLight(0xffffff, 1.4, 8);
+    frontFillLow.position.set(0, -0.2, 6);
+    scene.add(frontFillLow);
+
+    const rim = new THREE.DirectionalLight(0xbfe0ff, 1.0);
+    rim.position.set(-4, 4, -5);
+    scene.add(rim);
+
+    // ============================================================
+    // FLOOR (plain seamless backdrop like a studio product shot)
+    // ============================================================
+
+    const floor = new THREE.Mesh(
+      new THREE.PlaneGeometry(40, 40),
+      new THREE.MeshStandardMaterial({
+        color: 0x121316,
+        roughness: 1
+      })
+    );
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = -1.05;
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    const grid = new THREE.GridHelper(40, 80, 0x2a6b8a, 0x1c1d20);
+    grid.position.y = -1.04;
+    grid.material.transparent = true;
+    grid.material.opacity = 0.35;
+    scene.add(grid);
+
+    // ============================================================
+    // CHASSIS GROUP
+    // ============================================================
+
+    const unit = new THREE.Group();
+    scene.add(unit);
+
+    const bodyMat = new THREE.MeshStandardMaterial({
+      color: 0x3a3d42,
+      metalness: 0.55,
+      roughness: 0.4
+    });
+
+    const bodyWidth = 5.0;
+    const bodyHeight = 1.5;
+    const bodyDepth = 3.2;
+
+    const body = new THREE.Mesh(
+      new THREE.BoxGeometry(bodyWidth, bodyHeight, bodyDepth),
+      bodyMat
+    );
+    body.castShadow = true;
+    body.receiveShadow = true;
+    unit.add(body);
+
+    // ------------------------------------------------------------
+    // Diamond-shaped stackable rubber feet at all four top & bottom
+    // corners, matching the reference photo's chunky corner nubs
+    // ------------------------------------------------------------
+
+    const footMat = new THREE.MeshStandardMaterial({
+      color: 0x161616,
+      metalness: 0.2,
+      roughness: 0.55
+    });
+
+    // Each foot is a simple square block that caps the corner —
+    // axis-aligned (no rotation) so its edges sit flush against the
+    // body's own edges instead of floating at an angle.
+    function corner(x, z, y) {
+      const foot = new THREE.Mesh(
+        new THREE.BoxGeometry(0.22, 0.16, 0.22),
+        footMat
+      );
+      foot.position.set(x, y, z);
+      foot.castShadow = true;
+      unit.add(foot);
+    }
+
+    const cx = bodyWidth / 2 - 0.11;
+    const cz = bodyDepth / 2 - 0.11;
+
+    // top corners (stacking nuts)
+    corner(-cx, -cz, bodyHeight / 2 + 0.06);
+    corner(cx, -cz, bodyHeight / 2 + 0.06);
+    corner(-cx, cz, bodyHeight / 2 + 0.06);
+    corner(cx, cz, bodyHeight / 2 + 0.06);
+
+    // bottom corners (load-bearing feet)
+    corner(-cx, -cz, -bodyHeight / 2 - 0.06);
+    corner(cx, -cz, -bodyHeight / 2 - 0.06);
+    corner(-cx, cz, -bodyHeight / 2 - 0.06);
+    corner(cx, cz, -bodyHeight / 2 - 0.06);
+
+    // ------------------------------------------------------------
+    // Front panel (slightly darker, recessed strip on the front face)
+    // ------------------------------------------------------------
+
+    const FRONT_PANEL_DEPTH = 0.05;
+    const FRONT_PANEL_Z = bodyDepth / 2;
+
+    const frontPanel = new THREE.Mesh(
+      new THREE.BoxGeometry(bodyWidth - 0.1, bodyHeight - 0.15, FRONT_PANEL_DEPTH),
+      new THREE.MeshStandardMaterial({
+        color: 0x232528,
+        metalness: 0.4,
+        roughness: 0.35
+      })
+    );
+    frontPanel.position.z = FRONT_PANEL_Z + FRONT_PANEL_DEPTH / 2;
+    unit.add(frontPanel);
+
+    const PANEL_FACE_Z = FRONT_PANEL_Z + FRONT_PANEL_DEPTH;
+
+    // ------------------------------------------------------------
+    // Gold SMA connectors — same construction technique as before:
+    // base flange + tapered body + cap, grouped into channel clusters
+    // ------------------------------------------------------------
+
+    const gold = new THREE.MeshStandardMaterial({
+      color: 0xd7af37,
+      metalness: 1,
+      roughness: 0.18
+    });
+
+    const goldCap = new THREE.MeshStandardMaterial({
+      color: 0xf7dfa2,
+      metalness: 1,
+      roughness: 0.05
+    });
+
+    function addConnector(x, y) {
+      const base = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.045, 0.045, 0.03, 32),
+        gold
+      );
+      base.rotation.x = Math.PI / 2;
+      base.position.set(x, y, PANEL_FACE_Z);
+      unit.add(base);
+
+      const connectorBody = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.045, 0.055, 0.1, 32),
+        gold
+      );
+      connectorBody.rotation.x = Math.PI / 2;
+      connectorBody.position.set(x, y, PANEL_FACE_Z + 0.06);
+      unit.add(connectorBody);
+
+      const cap = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.028, 0.028, 0.03, 20),
+        goldCap
+      );
+      cap.rotation.x = Math.PI / 2;
+      cap.position.set(x, y, PANEL_FACE_Z + 0.11);
+      unit.add(cap);
+    }
+
+    // Bottom row: 7 connectors evenly spaced (Ch1-out, X0, X1, X2, X3, R1, R0)
+    // Top row: 2 connectors (Clock In / Clock Out) sitting above the
+    // left end of the bottom row — matching the reference photo's layout
+    const topRowY = 0.28;
+    const bottomRowY = 0.06;
+
+    const bottomRowXs = [-1.85, -1.55, -1.25, -0.95, -0.65, -0.35, -0.05];
+    const topRowXs = [-1.85, -1.55];
+
+    bottomRowXs.forEach((x) => addConnector(x, bottomRowY));
+    topRowXs.forEach((x) => addConnector(x, topRowY));
+
+    // ------------------------------------------------------------
+    // LXI badge, power button and status LEDs on the lower-left
+    // of the front panel
+    // ------------------------------------------------------------
+
+    const badgeMat = new THREE.MeshStandardMaterial({
+      color: 0xf2f2f2,
+      metalness: 0.1,
+      roughness: 0.6
+    });
+
+    const lxiBadge = new THREE.Mesh(
+      new THREE.CircleGeometry(0.09, 24),
+      badgeMat
+    );
+    lxiBadge.position.set(-2.15, -0.28, PANEL_FACE_Z + 0.002);
+    unit.add(lxiBadge);
+
+    const powerButton = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.045, 0.045, 0.02, 24),
+      new THREE.MeshStandardMaterial({
+        color: 0xffe600,
+        emissive: 0xffcc00,
+        emissiveIntensity: 1.8,
+        metalness: 0.2,
+        roughness: 0.3
+      })
+    );
+    powerButton.rotation.x = Math.PI / 2;
+    powerButton.position.set(-1.95, -0.28, PANEL_FACE_Z + 0.01);
+    unit.add(powerButton);
+
+    const statusLedMat = new THREE.MeshStandardMaterial({
+      color: 0xffe600,
+      emissive: 0xffe600,
+      emissiveIntensity: 3.5
+    });
+
+    [-1.75, -1.60, -1.45].forEach((x) => {
+      const led = new THREE.Mesh(new THREE.SphereGeometry(0.018, 12, 12), statusLedMat);
+      led.position.set(x, -0.28, PANEL_FACE_Z + 0.02);
+      unit.add(led);
+    });
+
+    // Extra large circular button, placed at the rightmost end of the
+    // same row as the badge / power button / status LEDs
+    const bigButton = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.075, 0.075, 0.025, 32),
+      new THREE.MeshStandardMaterial({
+        color: 0x2a2a2a,
+        metalness: 0.4,
+        roughness: 0.4
+      })
+    );
+    bigButton.rotation.x = Math.PI / 2;
+    bigButton.position.set(-1.15, -0.28, PANEL_FACE_Z + 0.012);
+    unit.add(bigButton);
+
+    const bigButtonRing = new THREE.Mesh(
+      new THREE.TorusGeometry(0.075, 0.006, 12, 32),
+      new THREE.MeshStandardMaterial({ color: 0xc9cdd2, metalness: 1, roughness: 0.25 })
+    );
+    bigButtonRing.position.set(-1.15, -0.28, PANEL_FACE_Z + 0.024);
+    unit.add(bigButtonRing);
+
+    // ------------------------------------------------------------
+    // Back panel cable points (LAN + power inlet), on the side
+    // opposite the front panel — this is where the yellow LAN
+    // cable plugs in
+    // ------------------------------------------------------------
+
+    const BACK_PANEL_Z = -bodyDepth / 2;
+
+    // Cable point — a single large circular socket, built with real
+    // depth: outer bezel ring -> recessed black collar -> chrome
+    // contact ring -> dark center hole
+    const lanBezel = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.32, 0.32, 0.04, 40),
+      new THREE.MeshStandardMaterial({ color: 0x3a3a3a, metalness: 0.6, roughness: 0.35 })
+    );
+    lanBezel.rotation.x = Math.PI / 2;
+    lanBezel.position.set(-1.6, 0.15, BACK_PANEL_Z - 0.02);
+    unit.add(lanBezel);
+
+    const lanCollar = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.25, 0.25, 0.04, 40),
+      new THREE.MeshStandardMaterial({ color: 0x000000, metalness: 0.1, roughness: 0.95 })
+    );
+    lanCollar.rotation.x = Math.PI / 2;
+    lanCollar.position.set(-1.6, 0.15, BACK_PANEL_Z - 0.035);
+    unit.add(lanCollar);
+
+    const lanContactRing = new THREE.Mesh(
+      new THREE.TorusGeometry(0.17, 0.018, 12, 40),
+      new THREE.MeshStandardMaterial({ color: 0xc9cdd2, metalness: 1, roughness: 0.2 })
+    );
+    lanContactRing.position.set(-1.6, 0.15, BACK_PANEL_Z - 0.05);
+    unit.add(lanContactRing);
+
+    const lanAperture = new THREE.Mesh(
+      new THREE.CircleGeometry(0.15, 40),
+      new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 1 })
+    );
+    lanAperture.position.set(-1.6, 0.15, BACK_PANEL_Z - 0.055);
+    unit.add(lanAperture);
+
+    // small LAN activity LED beside the socket
+    const lanLedMat = new THREE.MeshStandardMaterial({
+      color: 0xffcc33,
+      emissive: 0xffcc33,
+      emissiveIntensity: 2.5
+    });
+    const lanLed = new THREE.Mesh(new THREE.SphereGeometry(0.02, 12, 12), lanLedMat);
+    lanLed.position.set(-1.6, 0.42, BACK_PANEL_Z - 0.001);
+    unit.add(lanLed);
+
+    // ------------------------------------------------------------
+    // Side ventilation grille (circular fan-guard style holes,
+    // matching the round vent pattern on the right side panel)
+    // ------------------------------------------------------------
+
+    const ventMat = new THREE.MeshStandardMaterial({ color: 0x0a0a0a });
+    const ventHoleGeo = new THREE.CircleGeometry(0.035, 16);
+
+    const ventCenterY = -0.1;
+    const ventCenterZ = 0.7;
+    const ventRadius = 0.55;
+
+    // rings of holes radiating outward, like a fan guard
+    for (let ring = 0.08; ring <= ventRadius; ring += 0.11) {
+      const count = Math.max(6, Math.floor(ring * 40));
+      for (let i = 0; i < count; i++) {
+        const angle = (i / count) * Math.PI * 2;
+        const y = ventCenterY + Math.sin(angle) * ring;
+        const z = ventCenterZ + Math.cos(angle) * ring;
+        if (Math.abs(z - bodyDepth / 2) > bodyDepth / 2 - 0.05) continue;
+
+        const hole = new THREE.Mesh(ventHoleGeo, ventMat);
+        hole.rotation.y = Math.PI / 2;
+        hole.position.set(bodyWidth / 2 + 0.001, y, z);
+        unit.add(hole);
+      }
+    }
+
+    // ------------------------------------------------------------
+    // Subtle body edge outline for definition
+    // ------------------------------------------------------------
+
+    const edgeGeo = new THREE.EdgesGeometry(body.geometry);
+    const edgeLines = new THREE.LineSegments(
+      edgeGeo,
+      new THREE.LineBasicMaterial({ color: 0x1a1a1a })
+    );
+    unit.add(edgeLines);
+
+    // ============================================================
+    // RESIZE HANDLING
+    // ============================================================
+
+    window.addEventListener("resize", () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // ============================================================
+    // ANIMATION LOOP
+    // ============================================================
+
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    animate();
+  </script>
+
+</body>
+</html>
