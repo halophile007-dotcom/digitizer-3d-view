@@ -56,7 +56,7 @@
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0e0f12);
-    scene.fog = new THREE.FogExp2(0x0e0f12, 0.025);
+    scene.fog = new THREE.FogExp2(0x0e0f12, 0.02);
 
     const camera = new THREE.PerspectiveCamera(
       38,
@@ -73,7 +73,7 @@
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.15;
+    renderer.toneMappingExposure = 1.45;
     document.body.appendChild(renderer.domElement);
 
     const controls = new OrbitControls(camera, renderer.domElement);
@@ -81,31 +81,35 @@
     controls.target.set(0, 0.2, 0);
 
     // ============================================================
-    // LIGHTING (bright, even studio-style lighting like the photo)
+    // LIGHTING (boosted, bright studio-style lighting)
     // ============================================================
 
-    scene.add(new THREE.AmbientLight(0xffffff, 3.0));
+    scene.add(new THREE.AmbientLight(0xffffff, 4.5));
 
-    const key = new THREE.DirectionalLight(0xffffff, 3.2);
+    const key = new THREE.DirectionalLight(0xffffff, 4.8);
     key.position.set(5, 8, 6);
     key.castShadow = true;
     scene.add(key);
 
-    const fill = new THREE.DirectionalLight(0xffffff, 1.6);
+    const fill = new THREE.DirectionalLight(0xffffff, 2.6);
     fill.position.set(-5, 3, 4);
     scene.add(fill);
 
-    const front = new THREE.DirectionalLight(0xffffff, 3.4);
+    const front = new THREE.DirectionalLight(0xffffff, 5.0);
     front.position.set(0, 1.5, 8);
     scene.add(front);
 
-    const frontFillLow = new THREE.PointLight(0xffffff, 1.4, 8);
+    const frontFillLow = new THREE.PointLight(0xffffff, 2.2, 8);
     frontFillLow.position.set(0, -0.2, 6);
     scene.add(frontFillLow);
 
-    const rim = new THREE.DirectionalLight(0xbfe0ff, 1.0);
+    const rim = new THREE.DirectionalLight(0xbfe0ff, 1.8);
     rim.position.set(-4, 4, -5);
     scene.add(rim);
+
+    const topFill = new THREE.DirectionalLight(0xffffff, 2.0);
+    topFill.position.set(0, 10, 0);
+    scene.add(topFill);
 
     // ============================================================
     // FLOOR (plain seamless backdrop like a studio product shot)
@@ -510,4 +514,5 @@
 
 </body>
 </html>
+
 
