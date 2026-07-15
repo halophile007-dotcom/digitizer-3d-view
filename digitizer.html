@@ -334,59 +334,65 @@
     unit.add(bigButtonRing);
 
     // ------------------------------------------------------------
-    // Back panel cable points (LAN + power inlet), on the side
-    // opposite the front panel — this is where the yellow LAN
-    // cable plugs in
+    // Back panel — rebuilt to match the reference photo: a power
+    // inlet/switch cluster on the left, a wide grid of circular vent
+    // holes across the middle, and a smaller LAN port with a backlit
+    // ring on the right.
     // ------------------------------------------------------------
 
     const BACK_PANEL_Z = -bodyDepth / 2;
 
-    // Cable point — a single large circular socket, built with real
-    // depth: outer bezel ring -> recessed black collar -> chrome
-    // contact ring -> dark center hole
-    const lanBezel = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.32, 0.32, 0.04, 40),
-      new THREE.MeshStandardMaterial({ color: 0x3a3a3a, metalness: 0.6, roughness: 0.35 })
+    // --- IEC power inlet, recessed with a visible notch pattern ---
+    const powerInletBezel = new THREE.Mesh(
+      new THREE.BoxGeometry(0.32, 0.28, 0.05),
+      new THREE.MeshStandardMaterial({ color: 0x2a2a2a, metalness: 0.5, roughness: 0.4 })
     );
-    lanBezel.rotation.x = Math.PI / 2;
-    lanBezel.position.set(-1.6, 0.15, BACK_PANEL_Z - 0.02);
-    unit.add(lanBezel);
+    powerInletBezel.position.set(-2.15, 0.35, BACK_PANEL_Z - 0.02);
+    unit.add(powerInletBezel);
 
-    const lanCollar = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.25, 0.25, 0.04, 40),
-      new THREE.MeshStandardMaterial({ color: 0x000000, metalness: 0.1, roughness: 0.95 })
-    );
-    lanCollar.rotation.x = Math.PI / 2;
-    lanCollar.position.set(-1.6, 0.15, BACK_PANEL_Z - 0.035);
-    unit.add(lanCollar);
-
-    const lanContactRing = new THREE.Mesh(
-      new THREE.TorusGeometry(0.17, 0.018, 12, 40),
-      new THREE.MeshStandardMaterial({ color: 0xc9cdd2, metalness: 1, roughness: 0.2 })
-    );
-    lanContactRing.position.set(-1.6, 0.15, BACK_PANEL_Z - 0.05);
-    unit.add(lanContactRing);
-
-    const lanAperture = new THREE.Mesh(
-      new THREE.CircleGeometry(0.15, 40),
+    const powerInletHole = new THREE.Mesh(
+      new THREE.BoxGeometry(0.24, 0.2, 0.03),
       new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 1 })
     );
-    lanAperture.position.set(-1.6, 0.15, BACK_PANEL_Z - 0.055);
-    unit.add(lanAperture);
+    powerInletHole.position.set(-2.15, 0.35, BACK_PANEL_Z - 0.04);
+    unit.add(powerInletHole);
 
-    // small LAN activity LED beside the socket
-    const lanLedMat = new THREE.MeshStandardMaterial({
-      color: 0xffcc33,
-      emissive: 0xffcc33,
-      emissiveIntensity: 2.5
+    const pinMat = new THREE.MeshStandardMaterial({ color: 0x555555, metalness: 0.8, roughness: 0.4 });
+    [-0.06, 0, 0.06].forEach((offset) => {
+      const prong = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.07, 0.02), pinMat);
+      prong.position.set(-2.15 + offset, 0.35, BACK_PANEL_Z - 0.045);
+      unit.add(prong);
     });
-    const lanLed = new THREE.Mesh(new THREE.SphereGeometry(0.02, 12, 12), lanLedMat);
-    lanLed.position.set(-1.6, 0.42, BACK_PANEL_Z - 0.001);
-    unit.add(lanLed);
+
+    // rocker power switch beside the inlet
+    const rockerSwitch = new THREE.Mesh(
+      new THREE.BoxGeometry(0.14, 0.2, 0.04),
+      new THREE.MeshStandardMaterial({ color: 0x1c1c1c, metalness: 0.4, roughness: 0.4 })
+    );
+    rockerSwitch.position.set(-2.15, 0.02, BACK_PANEL_Z - 0.02);
+    unit.add(rockerSwitch);
+
+    // small ground screw beneath the inlet
+    const groundScrew = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.03, 0.03, 0.02, 16),
+      new THREE.MeshStandardMaterial({ color: 0x999999, metalness: 0.9, roughness: 0.3 })
+    );
+    groundScrew.rotation.x = Math.PI / 2;
+    groundScrew.position.set(-2.15, -0.32, BACK_PANEL_Z - 0.005);
+    unit.add(groundScrew);
+
+    // product label sticker to the right of the power cluster
+    const labelSticker = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.34, 0.22),
+      new THREE.MeshStandardMaterial({ color: 0xe8edf0, roughness: 0.8 })
+    );
+    labelSticker.rotation.y = Math.PI;
+    labelSticker.position.set(-1.65, 0.4, BACK_PANEL_Z - 0.001);
+    unit.add(labelSticker);
 
     // ------------------------------------------------------------
-    // Side ventilation grille (circular fan-guard style holes,
-    // matching the round vent pattern on the right side panel)
+    // Right side panel (+X) ventilation — circular fan-guard style
+    // holes radiating outward, as before
     // ------------------------------------------------------------
 
     const ventMat = new THREE.MeshStandardMaterial({ color: 0x0a0a0a });
@@ -396,7 +402,6 @@
     const ventCenterZ = 0.7;
     const ventRadius = 0.55;
 
-    // rings of holes radiating outward, like a fan guard
     for (let ring = 0.08; ring <= ventRadius; ring += 0.11) {
       const count = Math.max(6, Math.floor(ring * 40));
       for (let i = 0; i < count; i++) {
@@ -411,6 +416,63 @@
         unit.add(hole);
       }
     }
+
+    const backVentMat = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 1 });
+    const backVentHoleGeo = new THREE.CircleGeometry(0.028, 16);
+
+    // Rotated 180° around Y so the circle faces outward (-Z), away
+    // from the box — otherwise it's invisible when viewed from
+    // outside the back panel. X-range is kept between the power
+    // inlet (~x=-2.15) and the LAN socket (~x=1.9) so there's a
+    // clear gap on both sides where those components sit.
+    for (let x = -1.25; x <= 1.55; x += 0.09) {
+      for (let y = -0.55; y <= 0.55; y += 0.09) {
+        const hole = new THREE.Mesh(backVentHoleGeo, backVentMat);
+        hole.rotation.y = Math.PI;
+        hole.position.set(x, y, BACK_PANEL_Z - 0.001);
+        unit.add(hole);
+      }
+    }
+
+    // --- LAN port, smaller, on the right, with a backlit blue ring ---
+    const lanBezel = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.19, 0.19, 0.03, 40),
+      new THREE.MeshStandardMaterial({ color: 0x2a2a2a, metalness: 0.6, roughness: 0.35 })
+    );
+    lanBezel.rotation.x = Math.PI / 2;
+    lanBezel.position.set(1.9, 0.2, BACK_PANEL_Z - 0.015);
+    unit.add(lanBezel);
+
+    const lanGlowRing = new THREE.Mesh(
+      new THREE.TorusGeometry(0.15, 0.012, 12, 40),
+      new THREE.MeshStandardMaterial({
+        color: 0x3fa9ff,
+        emissive: 0x3fa9ff,
+        emissiveIntensity: 2.5
+      })
+    );
+    lanGlowRing.position.set(1.9, 0.2, BACK_PANEL_Z - 0.03);
+    unit.add(lanGlowRing);
+
+    const lanPortJack = new THREE.Mesh(
+      new THREE.BoxGeometry(0.16, 0.12, 0.08),
+      new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.3, roughness: 0.5 })
+    );
+    lanPortJack.position.set(1.9, 0.2, BACK_PANEL_Z - 0.04);
+    unit.add(lanPortJack);
+
+    const lanGlowLight = new THREE.PointLight(0x3fa9ff, 1.2, 1.5);
+    lanGlowLight.position.set(1.9, 0.2, BACK_PANEL_Z - 0.05);
+    unit.add(lanGlowLight);
+
+    // warranty sticker near the LAN port
+    const warrantySticker = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.24, 0.16),
+      new THREE.MeshStandardMaterial({ color: 0xdfe8f0, roughness: 0.8 })
+    );
+    warrantySticker.rotation.y = Math.PI;
+    warrantySticker.position.set(1.9, -0.3, BACK_PANEL_Z - 0.001);
+    unit.add(warrantySticker);
 
     // ------------------------------------------------------------
     // Subtle body edge outline for definition
@@ -448,3 +510,4 @@
 
 </body>
 </html>
+
